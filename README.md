@@ -34,6 +34,7 @@ WebDAV, CalDAV, and CardDAV client for nodejs and the browser.
   - [request](#request)
     - [dav.request.addressBookQuery(options)](#davrequestaddressbookqueryoptions)
     - [dav.request.basic(options)](#davrequestbasicoptions)
+    - [dav.request.calendarMultiget(options)](#davrequestcalendarmultigetoptions)
     - [dav.request.calendarQuery(options)](#davrequestcalendarqueryoptions)
     - [dav.request.freebusy(options)](#davrequestfreebusyoptions)
     - [dav.request.propfind(options)](#davrequestpropfindoptions)
@@ -296,6 +297,15 @@ Options:
   (String) data - put request body.
   (String) method - http method.
   (String) etag - cached calendar object etag.
+```
+
+#### dav.request.calendarMultiget(options)
+
+```
+Options:
+
+  (Array.<String>) hrefs - urls of items to retrieve.
+  (Array.<Object>) props - optional list of props to request.
 ```
 
 #### dav.request.calendarQuery(options)
