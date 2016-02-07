@@ -35,6 +35,7 @@ WebDAV, CalDAV, and CardDAV client for nodejs and the browser.
     - [dav.request.addressBookQuery(options)](#davrequestaddressbookqueryoptions)
     - [dav.request.basic(options)](#davrequestbasicoptions)
     - [dav.request.calendarQuery(options)](#davrequestcalendarqueryoptions)
+    - [dav.request.freebusy(options)](#davrequestfreebusyoptions)
     - [dav.request.propfind(options)](#davrequestpropfindoptions)
     - [dav.request.syncCollection(options)](#davrequestsynccollectionoptions)
   - [Client](#client)
@@ -306,6 +307,21 @@ Options:
   (Array.<Object>) filters - list of filters to send with request.
   (Array.<Object>) props - list of props to request.
   (String) timezone - VTIMEZONE calendar object.
+```
+
+#### dav.request.freebusy(options)
+
+This request should be made against the outbox url, you can retrieve this using
+the schedule-outbox-url property on the principal.
+
+```
+Options:
+
+  (String) organizer - organizer requesting freebusy data (with mailto prefix)
+  (String) start - freebusy range start
+  (String) end - freebusy range end
+  (Array.<String>) attendees - list of attendees to request (with mailto prefix)
+
 ```
 
 #### dav.request.propfind(options)
