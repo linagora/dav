@@ -938,7 +938,7 @@ exports.createAccount = _co2['default'].wrap(regeneratorRuntime.mark(function ca
 }));
 
 // http redirect.
-},{"./calendars":2,"./contacts":5,"./debug":6,"./fuzzy_url_equals":7,"./model":9,"./namespace":10,"./request":12,"co":29,"url":28}],2:[function(require,module,exports){
+},{"./calendars":2,"./contacts":5,"./debug":6,"./fuzzy_url_equals":7,"./model":9,"./namespace":10,"./request":12,"co":26,"url":31}],2:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -1069,6 +1069,7 @@ exports.listCalendars = listCalendars;
 
 function createCalendarObject(calendar, options) {
   var objectUrl = _url2['default'].resolve(calendar.url, options.filename);
+  options.contentType = options.contentType || "text/calendar; charset=utf-8";
   return webdav.createObject(objectUrl, options.data, options);
 }
 
@@ -1085,6 +1086,8 @@ function createCalendarObject(calendar, options) {
  */
 
 function updateCalendarObject(calendarObject, options) {
+  options.contentType = options.contentType || "text/calendar; charset=utf-8";
+
   return webdav.updateObject(calendarObject.url, calendarObject.calendarData, calendarObject.etag, options);
 }
 
@@ -1108,11 +1111,12 @@ function deleteCalendarObject(calendarObject, options) {
  * Options:
  *
  *   (Array.<Object>) filters - optional caldav filters.
+ *   (Array.<Object>) props - optional caldav properties.
  *   (dav.Sandbox) sandbox - optional request sandbox.
  *   (dav.Transport) xhr - request sender.
  */
 var listCalendarObjects = _co2['default'].wrap(regeneratorRuntime.mark(function callee$0$0(calendar, options) {
-  var filters, req, responses;
+  var filters, props, req, responses;
   return regeneratorRuntime.wrap(function callee$0$0$(context$1$0) {
     while (1) switch (context$1$0.prev = context$1$0.next) {
       case 0:
@@ -1126,10 +1130,59 @@ var listCalendarObjects = _co2['default'].wrap(regeneratorRuntime.mark(function 
             attrs: { name: 'VEVENT' }
           }]
         }];
+        props = options.props || [{ name: 'getetag', namespace: ns.DAV }, { name: 'calendar-data', namespace: ns.CALDAV }];
         req = request.calendarQuery({
           depth: 1,
-          props: [{ name: 'getetag', namespace: ns.DAV }, { name: 'calendar-data', namespace: ns.CALDAV }],
+          props: props,
           filters: filters
+        });
+        context$1$0.next = 6;
+        return options.xhr.send(req, calendar.url, {
+          sandbox: options.sandbox
+        });
+
+      case 6:
+        responses = context$1$0.sent;
+        return context$1$0.abrupt('return', responses.map(function (res) {
+          debug('Found calendar object with url ' + res.href);
+          return new _model.CalendarObject({
+            data: res,
+            calendar: calendar,
+            url: _url2['default'].resolve(calendar.account.rootUrl, res.href),
+            etag: res.props.getetag,
+            calendarData: res.props.calendarData
+          });
+        }));
+
+      case 8:
+      case 'end':
+        return context$1$0.stop();
+    }
+  }, callee$0$0, this);
+}));
+
+exports.listCalendarObjects = listCalendarObjects;
+/**
+ * @param {dav.Calendar} calendar the calendar to fetch objects for.
+ *
+ * Options:
+ *
+ *   (Array.<String>) paths - urls of items to retrieve.
+ *   (Array.<Object>) props - optional caldav properties.
+ *   (dav.Sandbox) sandbox - optional request sandbox.
+ *   (dav.Transport) xhr - request sender.
+ */
+var getCalendarObjects = _co2['default'].wrap(regeneratorRuntime.mark(function callee$0$0(calendar, options) {
+  var props, req, responses;
+  return regeneratorRuntime.wrap(function callee$0$0$(context$1$0) {
+    while (1) switch (context$1$0.prev = context$1$0.next) {
+      case 0:
+        debug('Doing REPORT on calendar ' + calendar.url + ' which belongs to\n         ' + calendar.account.credentials.username);
+
+        props = options.props || [{ name: 'getetag', namespace: ns.DAV }, { name: 'calendar-data', namespace: ns.CALDAV }];
+        req = request.calendarMultiget({
+          props: props,
+          paths: options.paths
         });
         context$1$0.next = 5;
         return options.xhr.send(req, calendar.url, {
@@ -1156,7 +1209,7 @@ var listCalendarObjects = _co2['default'].wrap(regeneratorRuntime.mark(function 
   }, callee$0$0, this);
 }));
 
-exports.listCalendarObjects = listCalendarObjects;
+exports.getCalendarObjects = getCalendarObjects;
 /**
  * @param {dav.Calendar} calendar the calendar to fetch updates to.
  * @return {Promise} promise will resolve with updated calendar object.
@@ -1329,7 +1382,7 @@ var webdavSync = _co2['default'].wrap(regeneratorRuntime.mark(function callee$0$
     }
   }, callee$0$0, this);
 }));
-},{"./debug":6,"./fuzzy_url_equals":7,"./model":9,"./namespace":10,"./request":12,"./webdav":22,"co":29,"url":28}],3:[function(require,module,exports){
+},{"./debug":6,"./fuzzy_url_equals":7,"./model":9,"./namespace":10,"./request":12,"./webdav":23,"co":26,"url":31}],3:[function(require,module,exports){
 /**
  * @fileoverview Camelcase something.
  */
@@ -1521,7 +1574,7 @@ var Client = (function () {
 })();
 
 exports.Client = Client;
-},{"./accounts":1,"./calendars":2,"./contacts":5,"url":28}],5:[function(require,module,exports){
+},{"./accounts":1,"./calendars":2,"./contacts":5,"url":31}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -1880,7 +1933,7 @@ var webdavSync = _co2['default'].wrap(regeneratorRuntime.mark(function callee$0$
     }
   }, callee$0$0, this);
 }));
-},{"./debug":6,"./fuzzy_url_equals":7,"./model":9,"./namespace":10,"./request":12,"./webdav":22,"co":29,"url":28}],6:[function(require,module,exports){
+},{"./debug":6,"./fuzzy_url_equals":7,"./model":9,"./namespace":10,"./request":12,"./webdav":23,"co":26,"url":31}],6:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -2009,14 +2062,14 @@ exports.debug = _debug2['default'];
 exports.ns = ns;
 exports.request = request;
 exports.transport = transport;
-},{"../package":33,"./accounts":1,"./calendars":2,"./client":4,"./contacts":5,"./debug":6,"./model":9,"./namespace":10,"./request":12,"./sandbox":13,"./transport":21}],9:[function(require,module,exports){
+},{"../package":35,"./accounts":1,"./calendars":2,"./client":4,"./contacts":5,"./debug":6,"./model":9,"./namespace":10,"./request":12,"./sandbox":13,"./transport":22}],9:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _get = function get(_x, _x2, _x3) { var _again = true; _function: while (_again) { var object = _x, property = _x2, receiver = _x3; desc = parent = getter = undefined; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x = parent; _x2 = property; _x3 = receiver; _again = true; continue _function; } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
+var _get = function get(_x, _x2, _x3) { var _again = true; _function: while (_again) { var object = _x, property = _x2, receiver = _x3; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x = parent; _x2 = property; _x3 = receiver; _again = true; desc = parent = undefined; continue _function; } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
@@ -2191,6 +2244,7 @@ Object.defineProperty(exports, '__esModule', {
   value: true
 });
 exports.multistatus = multistatus;
+exports.scheduleResponse = scheduleResponse;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
@@ -2217,6 +2271,14 @@ function multistatus(string) {
   return result;
 }
 
+function scheduleResponse(string) {
+  var parser = new DOMParser();
+  var doc = parser.parseFromString(string, 'text/xml');
+  var result = traverse.multistatus(child(doc, 'schedule-response'));
+  debug('input:\n' + string + '\noutput:\n' + JSON.stringify(result) + '\n');
+  return result;
+}
+
 var traverse = {
   // { response: [x, y, z] }
   multistatus: function multistatus(node) {
@@ -2224,8 +2286,9 @@ var traverse = {
   },
 
   // { propstat: [x, y, z] }
+  // recipient is used in schedule-response, the others are common to all responses
   response: function response(node) {
-    return complex(node, { propstat: true, href: false });
+    return complex(node, { propstat: true, href: false, recipient: false });
   },
 
   // { prop: x }
@@ -2243,7 +2306,8 @@ var traverse = {
       resourcetype: false,
       supportedCalendarComponentSet: false,
       supportedReportSet: false,
-      currentUserPrincipal: false
+      currentUserPrincipal: false,
+      calendarUserAddressSet: false
     });
   },
 
@@ -2283,9 +2347,29 @@ var traverse = {
   },
 
   currentUserPrincipal: function currentUserPrincipal(node) {
-    return complex(node, { href: false }, 'href');
+    return hrefchildren(node, false);
+  },
+  scheduleInboxURL: function scheduleInboxURL(node) {
+    return hrefchildren(node, false);
+  },
+  scheduleOutboxURL: function scheduleOutboxURL(node) {
+    return hrefchildren(node, false);
+  },
+  calendarHomeSet: function calendarHomeSet(node) {
+    return hrefchildren(node, false);
+  },
+  calendarUserAddressSet: function calendarUserAddressSet(node) {
+    return hrefchildren(node, true);
+  },
+  recipient: function recipient(node) {
+    return hrefchildren(node, false);
   }
+
 };
+
+function hrefchildren(node, isarray) {
+  return complex(node, { href: isarray }, 'href');
+}
 
 function complex(node, childspec, collapse) {
   var result = {};
@@ -2317,7 +2401,7 @@ function traverseChild(node, childNode, childspec, result) {
     debug('Unexpected node of type ' + localName + ' encountered while ' + 'parsing ' + node.localName + ' node!');
     var value = childNode.textContent;
     if (localName in result) {
-      if (!Array.isArray(result[camelCase])) {
+      if (!Array.isArray(result[localName])) {
         // Since we've already encountered this node type and we haven't yet
         // made an array for it, make an array now.
         result[localName] = [result[localName]];
@@ -2375,7 +2459,7 @@ function children(node, localName) {
 function child(node, localName) {
   return children(node, localName)[0];
 }
-},{"./camelize":3,"./debug":6,"xmldom":30}],12:[function(require,module,exports){
+},{"./camelize":3,"./debug":6,"xmldom":32}],12:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -2383,15 +2467,19 @@ Object.defineProperty(exports, '__esModule', {
 });
 exports.addressBookQuery = addressBookQuery;
 exports.basic = basic;
+exports.calendarMultiget = calendarMultiget;
 exports.calendarQuery = calendarQuery;
 exports.collectionQuery = collectionQuery;
 exports.propfind = propfind;
 exports.syncCollection = syncCollection;
+exports.freebusy = freebusy;
 exports.mergeProps = mergeProps;
 exports.getProps = getProps;
 exports.setRequestHeaders = setRequestHeaders;
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj['default'] = obj; return newObj; } }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) arr2[i] = arr[i]; return arr2; } else { return Array.from(arr); } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
@@ -2430,6 +2518,20 @@ function basic(options) {
     requestData: options.data,
     transformRequest: transformRequest
   });
+}
+
+/**
+ * Options:
+ *
+ *   (Array.<String>) paths - urls of items to retrieve.
+ *   (Array.<Object>) props - optional list of props to request.
+ */
+
+function calendarMultiget(options) {
+  return collectionQuery(template.calendarMultiget({
+    props: options.props || [],
+    paths: options.paths || []
+  }), {});
 }
 
 /**
@@ -2548,6 +2650,38 @@ function syncCollection(options) {
   });
 }
 
+/**
+ * Options:
+ *
+ *   (String) organizer - organizer requesting freebusy data (with mailto prefix)
+ *   (String) start - freebusy range start
+ *   (String) end - freebusy range end
+ *   (Array.<String>) attendees - list of attendees to request (with mailto prefix)
+ */
+
+function freebusy(options) {
+  function transformRequest(xhr) {
+    options.contentType = "text/calendar; charset=utf-8";
+    setRequestHeaders(xhr, options);
+  }
+
+  function transformResponse(xhr) {
+    return (0, _parser.scheduleResponse)(xhr.responseText).response;
+  }
+
+  var stamp = new Date().toISOString().replace(/([:-]|\.\d{3})/g, "");
+  var requestData = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//dav.js//freebusy", "METHOD:REQUEST", "BEGIN:VFREEBUSY", "DTSTAMP:" + stamp, "UID:" + stamp, "DTSTART:" + options.start, "DTEND:" + options.end, "ORGANIZER:" + options.organizer].concat(_toConsumableArray(options.attendees.map(function (att) {
+    return "ATTENDEE;PARTSTAT=NEEDS-ACTION:" + att;
+  })), ["END:VFREEBUSY", "END:VCALENDAR"]).join("\n");
+
+  return new Request({
+    method: 'POST',
+    requestData: requestData,
+    transformRequest: transformRequest,
+    transformResponse: transformResponse
+  });
+}
+
 var Request = function Request() {
   var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
@@ -2592,17 +2726,17 @@ function getProps(propstats) {
 }
 
 function setRequestHeaders(request, options) {
-  request.setRequestHeader('Content-Type', 'application/xml;charset=utf-8');
+  request.setRequestHeader('Content-Type', options.contentType || 'application/xml;charset=utf-8');
 
   if ('depth' in options) {
     request.setRequestHeader('Depth', options.depth);
   }
 
-  if ('etag' in options) {
+  if ('etag' in options && options.etag) {
     request.setRequestHeader('If-Match', options.etag);
   }
 }
-},{"./parser":11,"./template":17}],13:[function(require,module,exports){
+},{"./parser":11,"./template":18}],13:[function(require,module,exports){
 /**
  * @fileoverview Group requests together and then abort as a group.
  *
@@ -2676,11 +2810,33 @@ var _prop = require('./prop');
 var _prop2 = _interopRequireDefault(_prop);
 
 function addressBookQuery(object) {
-  return '<card:addressbook-query xmlns:card="urn:ietf:params:xml:ns:carddav"\n                          xmlns:d="DAV:">\n    <d:prop>\n      ' + object.props.map(_prop2['default']) + '\n    </d:prop>\n    <!-- According to http://stackoverflow.com/questions/23742568/google-carddav-api-addressbook-multiget-returns-400-bad-request,\n         Google\'s CardDAV server requires a filter element. I don\'t think all addressbook-query calls need a filter in the spec though? -->\n    <card:filter>\n      <card:prop-filter name="FN">\n      </card:prop-filter>\n    </card:filter>\n  </card:addressbook-query>';
+  return '<card:addressbook-query xmlns:card="urn:ietf:params:xml:ns:carddav"\n                          xmlns:d="DAV:">\n    <d:prop>\n      ' + object.props.map(_prop2['default']).join('') + '\n    </d:prop>\n    <!-- According to http://stackoverflow.com/questions/23742568/google-carddav-api-addressbook-multiget-returns-400-bad-request,\n         Google\'s CardDAV server requires a filter element. I don\'t think all addressbook-query calls need a filter in the spec though? -->\n    <card:filter>\n      <card:prop-filter name="FN">\n      </card:prop-filter>\n    </card:filter>\n  </card:addressbook-query>';
 }
 
 module.exports = exports['default'];
-},{"./prop":18}],15:[function(require,module,exports){
+},{"./prop":19}],15:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, '__esModule', {
+  value: true
+});
+exports['default'] = calendarMultiget;
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _prop = require('./prop');
+
+var _prop2 = _interopRequireDefault(_prop);
+
+function calendarMultiget(object) {
+  var hrefs = object.paths.map(function (p) {
+    return '<d:href>' + p + '</d:href>';
+  }).join('');
+  return '<c:calendar-multiget xmlns:c="urn:ietf:params:xml:ns:caldav"\n                    xmlns:cs="http://calendarserver.org/ns/"\n                    xmlns:d="DAV:">\n    <d:prop>\n      ' + object.props.map(_prop2['default']).join('') + '\n    </d:prop>\n    ' + hrefs + '\n  </c:calendar-multiget>';
+}
+
+module.exports = exports['default'];
+},{"./prop":19}],16:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -2699,11 +2855,11 @@ var _prop = require('./prop');
 var _prop2 = _interopRequireDefault(_prop);
 
 function calendarQuery(object) {
-  return '<c:calendar-query xmlns:c="urn:ietf:params:xml:ns:caldav"\n                    xmlns:cs="http://calendarserver.org/ns/"\n                    xmlns:d="DAV:">\n    <d:prop>\n      ' + object.props.map(_prop2['default']) + '\n    </d:prop>\n    <c:filter>\n      ' + object.filters.map(_filter2['default']) + '\n    </c:filter>\n    ' + (object.timezone ? '<c:timezone>' + object.timezone + '</c:timezone>' : '') + '\n  </c:calendar-query>';
+  return '<c:calendar-query xmlns:c="urn:ietf:params:xml:ns:caldav"\n                    xmlns:cs="http://calendarserver.org/ns/"\n                    xmlns:d="DAV:">\n    <d:prop>\n      ' + object.props.map(_prop2['default']).join('') + '\n    </d:prop>\n    <c:filter>\n      ' + object.filters.map(_filter2['default']).join('') + '\n    </c:filter>\n    ' + (object.timezone ? '<c:timezone>' + object.timezone + '</c:timezone>' : '') + '\n  </c:calendar-query>';
 }
 
 module.exports = exports['default'];
-},{"./filter":16,"./prop":18}],16:[function(require,module,exports){
+},{"./filter":17,"./prop":19}],17:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -2716,7 +2872,11 @@ function filter(item) {
     return '<c:' + item.type + ' ' + formatAttrs(item.attrs) + '/>';
   }
 
-  var children = item.children.map(filter);
+  var children = item.children;
+  if (typeof children != 'string') {
+    children = item.children.map(filter).join('');
+  }
+
   return '<c:' + item.type + ' ' + formatAttrs(item.attrs) + '>\n            ' + children + '\n          </c:' + item.type + '>';
 }
 
@@ -2730,14 +2890,15 @@ function formatAttrs(attrs) {
   }).join(' ');
 }
 module.exports = exports['default'];
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 'use strict';
 
 exports.addressBookQuery = require('./address_book_query');
+exports.calendarMultiget = require('./calendar_multiget');
 exports.calendarQuery = require('./calendar_query');
 exports.propfind = require('./propfind');
 exports.syncCollection = require('./sync_collection');
-},{"./address_book_query":14,"./calendar_query":15,"./propfind":19,"./sync_collection":20}],18:[function(require,module,exports){
+},{"./address_book_query":14,"./calendar_multiget":15,"./calendar_query":16,"./propfind":20,"./sync_collection":21}],19:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -2788,7 +2949,17 @@ var ns = _interopRequireWildcard(_namespace);
  */
 
 function prop(item) {
-  return '<' + xmlnsPrefix(item.namespace) + ':' + item.name + ' />';
+  var nsPrefix = xmlnsPrefix(item.namespace);
+  if (!item.children || !item.children.length) {
+    return '<' + nsPrefix + ':' + item.name + ' ' + formatAttrs(item.attrs) + '/>';
+  }
+
+  var children = item.children;
+  if (typeof children != 'string') {
+    children = item.children.map(prop).join('');
+  }
+
+  return '<' + nsPrefix + ':' + item.name + ' ' + formatAttrs(item.attrs) + '>' + children + '</' + nsPrefix + ':' + item.name + '>';
 }
 
 function xmlnsPrefix(namespace) {
@@ -2805,8 +2976,18 @@ function xmlnsPrefix(namespace) {
       throw new Error('Unrecognized xmlns ' + namespace);
   }
 }
+
+function formatAttrs(attrs) {
+  if (typeof attrs !== 'object') {
+    return '';
+  }
+
+  return Object.keys(attrs).map(function (attr) {
+    return attr + '="' + attrs[attr] + '"';
+  }).join(' ');
+}
 module.exports = exports['default'];
-},{"../namespace":10}],19:[function(require,module,exports){
+},{"../namespace":10}],20:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -2821,11 +3002,11 @@ var _prop = require('./prop');
 var _prop2 = _interopRequireDefault(_prop);
 
 function propfind(object) {
-  return '<d:propfind xmlns:c="urn:ietf:params:xml:ns:caldav"\n              xmlns:card="urn:ietf:params:xml:ns:carddav"\n              xmlns:cs="http://calendarserver.org/ns/"\n              xmlns:d="DAV:">\n    <d:prop>\n      ' + object.props.map(_prop2['default']) + '\n    </d:prop>\n  </d:propfind>';
+  return '<d:propfind xmlns:c="urn:ietf:params:xml:ns:caldav"\n              xmlns:card="urn:ietf:params:xml:ns:carddav"\n              xmlns:cs="http://calendarserver.org/ns/"\n              xmlns:d="DAV:">\n    <d:prop>\n      ' + object.props.map(_prop2['default']).join('') + '\n    </d:prop>\n  </d:propfind>';
 }
 
 module.exports = exports['default'];
-},{"./prop":18}],20:[function(require,module,exports){
+},{"./prop":19}],21:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -2840,18 +3021,18 @@ var _prop = require('./prop');
 var _prop2 = _interopRequireDefault(_prop);
 
 function syncCollection(object) {
-  return '<d:sync-collection xmlns:c="urn:ietf:params:xml:ns:caldav"\n                     xmlns:card="urn:ietf:params:xml:ns:carddav"\n                     xmlns:d="DAV:">\n    <d:sync-level>' + object.syncLevel + '</d:sync-level>\n    <d:sync-token>' + object.syncToken + '</d:sync-token>\n    <d:prop>\n      ' + object.props.map(_prop2['default']) + '\n    </d:prop>\n  </d:sync-collection>';
+  return '<d:sync-collection xmlns:c="urn:ietf:params:xml:ns:caldav"\n                     xmlns:card="urn:ietf:params:xml:ns:carddav"\n                     xmlns:d="DAV:">\n    <d:sync-level>' + object.syncLevel + '</d:sync-level>\n    <d:sync-token>' + object.syncToken + '</d:sync-token>\n    <d:prop>\n      ' + object.props.map(_prop2['default']).join('') + '\n    </d:prop>\n  </d:sync-collection>';
 }
 
 module.exports = exports['default'];
-},{"./prop":18}],21:[function(require,module,exports){
+},{"./prop":19}],22:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
   value: true
 });
 
-var _get = function get(_x2, _x3, _x4) { var _again = true; _function: while (_again) { var object = _x2, property = _x3, receiver = _x4; desc = parent = getter = undefined; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x2 = parent; _x3 = property; _x4 = receiver; _again = true; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
+var _get = function get(_x2, _x3, _x4) { var _again = true; _function: while (_again) { var object = _x2, property = _x3, receiver = _x4; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x2 = parent; _x3 = property; _x4 = receiver; _again = true; desc = parent = undefined; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
@@ -2872,6 +3053,8 @@ var _querystring2 = _interopRequireDefault(_querystring);
 var _xmlhttprequest = require('./xmlhttprequest');
 
 var _xmlhttprequest2 = _interopRequireDefault(_xmlhttprequest);
+
+var base64 = require('btoa-lite');
 
 var Transport = (function () {
   /**
@@ -2926,7 +3109,7 @@ var Basic = (function (_Transport) {
     key: 'send',
     value: function send(request, url, options) {
       return (0, _co2['default'])(regeneratorRuntime.mark(function callee$2$0() {
-        var sandbox, transformRequest, transformResponse, onerror, xhr, result;
+        var sandbox, transformRequest, transformResponse, onerror, xhr, auth, result;
         return regeneratorRuntime.wrap(function callee$2$0$(context$3$0) {
           while (1) switch (context$3$0.prev = context$3$0.next) {
             case 0:
@@ -2937,36 +3120,40 @@ var Basic = (function (_Transport) {
               xhr = new _xmlhttprequest2['default']();
 
               if (sandbox) sandbox.add(xhr);
-              xhr.open(request.method, url, true, /* async */
-              this.credentials.username, this.credentials.password);
+              xhr.open(request.method, url, true /* async */
+              );
+
+              auth = "Basic " + base64(this.credentials.username + ":" + this.credentials.password);
+
+              xhr.setRequestHeader("Authorization", auth);
 
               if (transformRequest) transformRequest(xhr);
 
               result = undefined;
-              context$3$0.prev = 9;
-              context$3$0.next = 12;
+              context$3$0.prev = 11;
+              context$3$0.next = 14;
               return xhr.send(request.requestData);
 
-            case 12:
+            case 14:
               result = transformResponse ? transformResponse(xhr) : xhr;
-              context$3$0.next = 19;
+              context$3$0.next = 21;
               break;
 
-            case 15:
-              context$3$0.prev = 15;
-              context$3$0.t0 = context$3$0['catch'](9);
+            case 17:
+              context$3$0.prev = 17;
+              context$3$0.t0 = context$3$0['catch'](11);
 
               if (onerror) onerror(context$3$0.t0);
               throw context$3$0.t0;
 
-            case 19:
+            case 21:
               return context$3$0.abrupt('return', result);
 
-            case 20:
+            case 22:
             case 'end':
               return context$3$0.stop();
           }
-        }, callee$2$0, this, [[9, 15]]);
+        }, callee$2$0, this, [[11, 17]]);
       }).bind(this));
     }
   }]);
@@ -3154,7 +3341,7 @@ var refreshAccessToken = _co2['default'].wrap(regeneratorRuntime.mark(function c
     }
   }, callee$0$0, this);
 }));
-},{"./xmlhttprequest":23,"co":29,"querystring":27}],22:[function(require,module,exports){
+},{"./xmlhttprequest":24,"btoa-lite":25,"co":26,"querystring":30}],23:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -3193,12 +3380,12 @@ var debug = require('./debug')('dav:webdav');
  */
 
 function createObject(objectUrl, objectData, options) {
-  var req = request.basic({ method: 'PUT', data: objectData });
+  var req = request.basic({ method: 'PUT', data: objectData, contentType: options.contentType });
   return options.xhr.send(req, objectUrl, { sandbox: options.sandbox });
 }
 
 function updateObject(objectUrl, objectData, etag, options) {
-  var req = request.basic({ method: 'PUT', data: objectData, etag: etag });
+  var req = request.basic({ method: 'PUT', data: objectData, etag: etag, contentType: options.contentType });
   return options.xhr.send(req, objectUrl, { sandbox: options.sandbox });
 }
 
@@ -3308,7 +3495,7 @@ var isCollectionDirty = _co2['default'].wrap(regeneratorRuntime.mark(function ca
   }, callee$0$0, this);
 }));
 exports.isCollectionDirty = isCollectionDirty;
-},{"./debug":6,"./fuzzy_url_equals":7,"./namespace":10,"./request":12,"co":29}],23:[function(require,module,exports){
+},{"./debug":6,"./fuzzy_url_equals":7,"./namespace":10,"./request":12,"co":26}],24:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, '__esModule', {
@@ -3317,7 +3504,11 @@ Object.defineProperty(exports, '__esModule', {
 
 var _createClass = (function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ('value' in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; })();
 
+var _get = function get(_x, _x2, _x3) { var _again = true; _function: while (_again) { var object = _x, property = _x2, receiver = _x3; _again = false; if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { _x = parent; _x2 = property; _x3 = receiver; _again = true; desc = parent = undefined; continue _function; } } else if ('value' in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } } };
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== 'function' && superClass !== null) { throw new TypeError('Super expression must either be null or a function, not ' + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
 var debug = require('./debug')('dav:xmlhttprequest');
 
@@ -3330,9 +3521,27 @@ if (typeof self !== 'undefined' && 'XMLHttpRequest' in self) {
   Native = require(false || 'xmlhttprequest').XMLHttpRequest;
 }
 
-/**
- * @fileoverview Promise wrapper around native xhr api.
- */
+var HttpError = (function (_Error) {
+  _inherits(HttpError, _Error);
+
+  function HttpError(message, code, request) {
+    _classCallCheck(this, HttpError);
+
+    _get(Object.getPrototypeOf(HttpError.prototype), 'constructor', this).call(this, message);
+    this.name = this.constructor.name;
+    this.message = message;
+    this.code = code;
+    this.request = request;
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, this.constructor.name);
+    }
+  }
+
+  /**
+   * @fileoverview Promise wrapper around native xhr api.
+   */
+  return HttpError;
+})(Error);
 
 var XMLHttpRequest = (function () {
   function XMLHttpRequest(options) {
@@ -3409,7 +3618,7 @@ var XMLHttpRequest = (function () {
             }
 
           if (request.status < 200 || request.status >= 400) {
-            return reject(new Error('Bad status: ' + request.status));
+            return reject(new HttpError(request.responseText, request.status, request));
           }
 
           return resolve(request.responseText);
@@ -3432,9 +3641,253 @@ var XMLHttpRequest = (function () {
 
 exports['default'] = XMLHttpRequest;
 module.exports = exports['default'];
-},{"./debug":6}],24:[function(require,module,exports){
+},{"./debug":6}],25:[function(require,module,exports){
+module.exports = function _btoa(str) {
+  return btoa(str)
+}
+
+},{}],26:[function(require,module,exports){
+
+/**
+ * slice() reference.
+ */
+
+var slice = Array.prototype.slice;
+
+/**
+ * Expose `co`.
+ */
+
+module.exports = co['default'] = co.co = co;
+
+/**
+ * Wrap the given generator `fn` into a
+ * function that returns a promise.
+ * This is a separate function so that
+ * every `co()` call doesn't create a new,
+ * unnecessary closure.
+ *
+ * @param {GeneratorFunction} fn
+ * @return {Function}
+ * @api public
+ */
+
+co.wrap = function (fn) {
+  createPromise.__generatorFunction__ = fn;
+  return createPromise;
+  function createPromise() {
+    return co.call(this, fn.apply(this, arguments));
+  }
+};
+
+/**
+ * Execute the generator function or a generator
+ * and return a promise.
+ *
+ * @param {Function} fn
+ * @return {Promise}
+ * @api public
+ */
+
+function co(gen) {
+  var ctx = this;
+  var args = slice.call(arguments, 1)
+
+  // we wrap everything in a promise to avoid promise chaining,
+  // which leads to memory leak errors.
+  // see https://github.com/tj/co/issues/180
+  return new Promise(function(resolve, reject) {
+    if (typeof gen === 'function') gen = gen.apply(ctx, args);
+    if (!gen || typeof gen.next !== 'function') return resolve(gen);
+
+    onFulfilled();
+
+    /**
+     * @param {Mixed} res
+     * @return {Promise}
+     * @api private
+     */
+
+    function onFulfilled(res) {
+      var ret;
+      try {
+        ret = gen.next(res);
+      } catch (e) {
+        return reject(e);
+      }
+      next(ret);
+    }
+
+    /**
+     * @param {Error} err
+     * @return {Promise}
+     * @api private
+     */
+
+    function onRejected(err) {
+      var ret;
+      try {
+        ret = gen.throw(err);
+      } catch (e) {
+        return reject(e);
+      }
+      next(ret);
+    }
+
+    /**
+     * Get the next value in the generator,
+     * return a promise.
+     *
+     * @param {Object} ret
+     * @return {Promise}
+     * @api private
+     */
+
+    function next(ret) {
+      if (ret.done) return resolve(ret.value);
+      var value = toPromise.call(ctx, ret.value);
+      if (value && isPromise(value)) return value.then(onFulfilled, onRejected);
+      return onRejected(new TypeError('You may only yield a function, promise, generator, array, or object, '
+        + 'but the following object was passed: "' + String(ret.value) + '"'));
+    }
+  });
+}
+
+/**
+ * Convert a `yield`ed value into a promise.
+ *
+ * @param {Mixed} obj
+ * @return {Promise}
+ * @api private
+ */
+
+function toPromise(obj) {
+  if (!obj) return obj;
+  if (isPromise(obj)) return obj;
+  if (isGeneratorFunction(obj) || isGenerator(obj)) return co.call(this, obj);
+  if ('function' == typeof obj) return thunkToPromise.call(this, obj);
+  if (Array.isArray(obj)) return arrayToPromise.call(this, obj);
+  if (isObject(obj)) return objectToPromise.call(this, obj);
+  return obj;
+}
+
+/**
+ * Convert a thunk to a promise.
+ *
+ * @param {Function}
+ * @return {Promise}
+ * @api private
+ */
+
+function thunkToPromise(fn) {
+  var ctx = this;
+  return new Promise(function (resolve, reject) {
+    fn.call(ctx, function (err, res) {
+      if (err) return reject(err);
+      if (arguments.length > 2) res = slice.call(arguments, 1);
+      resolve(res);
+    });
+  });
+}
+
+/**
+ * Convert an array of "yieldables" to a promise.
+ * Uses `Promise.all()` internally.
+ *
+ * @param {Array} obj
+ * @return {Promise}
+ * @api private
+ */
+
+function arrayToPromise(obj) {
+  return Promise.all(obj.map(toPromise, this));
+}
+
+/**
+ * Convert an object of "yieldables" to a promise.
+ * Uses `Promise.all()` internally.
+ *
+ * @param {Object} obj
+ * @return {Promise}
+ * @api private
+ */
+
+function objectToPromise(obj){
+  var results = new obj.constructor();
+  var keys = Object.keys(obj);
+  var promises = [];
+  for (var i = 0; i < keys.length; i++) {
+    var key = keys[i];
+    var promise = toPromise.call(this, obj[key]);
+    if (promise && isPromise(promise)) defer(promise, key);
+    else results[key] = obj[key];
+  }
+  return Promise.all(promises).then(function () {
+    return results;
+  });
+
+  function defer(promise, key) {
+    // predefine the key in the result
+    results[key] = undefined;
+    promises.push(promise.then(function (res) {
+      results[key] = res;
+    }));
+  }
+}
+
+/**
+ * Check if `obj` is a promise.
+ *
+ * @param {Object} obj
+ * @return {Boolean}
+ * @api private
+ */
+
+function isPromise(obj) {
+  return 'function' == typeof obj.then;
+}
+
+/**
+ * Check if `obj` is a generator.
+ *
+ * @param {Mixed} obj
+ * @return {Boolean}
+ * @api private
+ */
+
+function isGenerator(obj) {
+  return 'function' == typeof obj.next && 'function' == typeof obj.throw;
+}
+
+/**
+ * Check if `obj` is a generator function.
+ *
+ * @param {Mixed} obj
+ * @return {Boolean}
+ * @api private
+ */
+function isGeneratorFunction(obj) {
+  var constructor = obj.constructor;
+  if (!constructor) return false;
+  if ('GeneratorFunction' === constructor.name || 'GeneratorFunction' === constructor.displayName) return true;
+  return isGenerator(constructor.prototype);
+}
+
+/**
+ * Check for plain object.
+ *
+ * @param {Mixed} val
+ * @return {Boolean}
+ * @api private
+ */
+
+function isObject(val) {
+  return Object == val.constructor;
+}
+
+},{}],27:[function(require,module,exports){
 (function (global){
-/*! https://mths.be/punycode v1.3.2 by @mathias */
+/*! https://mths.be/punycode v1.4.0 by @mathias */
 ;(function(root) {
 
 	/** Detect free variables */
@@ -3500,7 +3953,7 @@ module.exports = exports['default'];
 	 * @returns {Error} Throws a `RangeError` with the applicable error message.
 	 */
 	function error(type) {
-		throw RangeError(errors[type]);
+		throw new RangeError(errors[type]);
 	}
 
 	/**
@@ -3647,7 +4100,7 @@ module.exports = exports['default'];
 
 	/**
 	 * Bias adaptation function as per section 3.4 of RFC 3492.
-	 * http://tools.ietf.org/html/rfc3492#section-3.4
+	 * https://tools.ietf.org/html/rfc3492#section-3.4
 	 * @private
 	 */
 	function adapt(delta, numPoints, firstTime) {
@@ -3952,21 +4405,24 @@ module.exports = exports['default'];
 			return punycode;
 		});
 	} else if (freeExports && freeModule) {
-		if (module.exports == freeExports) { // in Node.js or RingoJS v0.8.0+
+		if (module.exports == freeExports) {
+			// in Node.js, io.js, or RingoJS v0.8.0+
 			freeModule.exports = punycode;
-		} else { // in Narwhal or RingoJS v0.7.0-
+		} else {
+			// in Narwhal or RingoJS v0.7.0-
 			for (key in punycode) {
 				punycode.hasOwnProperty(key) && (freeExports[key] = punycode[key]);
 			}
 		}
-	} else { // in Rhino or a web browser
+	} else {
+		// in Rhino or a web browser
 		root.punycode = punycode;
 	}
 
 }(this));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],25:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4052,7 +4508,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],26:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4139,13 +4595,13 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],27:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":25,"./encode":26}],28:[function(require,module,exports){
+},{"./decode":28,"./encode":29}],31:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -4854,246 +5310,7 @@ function isNullOrUndefined(arg) {
   return  arg == null;
 }
 
-},{"punycode":24,"querystring":27}],29:[function(require,module,exports){
-
-/**
- * slice() reference.
- */
-
-var slice = Array.prototype.slice;
-
-/**
- * Expose `co`.
- */
-
-module.exports = co['default'] = co.co = co;
-
-/**
- * Wrap the given generator `fn` into a
- * function that returns a promise.
- * This is a separate function so that
- * every `co()` call doesn't create a new,
- * unnecessary closure.
- *
- * @param {GeneratorFunction} fn
- * @return {Function}
- * @api public
- */
-
-co.wrap = function (fn) {
-  createPromise.__generatorFunction__ = fn;
-  return createPromise;
-  function createPromise() {
-    return co.call(this, fn.apply(this, arguments));
-  }
-};
-
-/**
- * Execute the generator function or a generator
- * and return a promise.
- *
- * @param {Function} fn
- * @return {Promise}
- * @api public
- */
-
-function co(gen) {
-  var ctx = this;
-  var args = slice.call(arguments, 1)
-
-  // we wrap everything in a promise to avoid promise chaining,
-  // which leads to memory leak errors.
-  // see https://github.com/tj/co/issues/180
-  return new Promise(function(resolve, reject) {
-    if (typeof gen === 'function') gen = gen.apply(ctx, args);
-    if (!gen || typeof gen.next !== 'function') return resolve(gen);
-
-    onFulfilled();
-
-    /**
-     * @param {Mixed} res
-     * @return {Promise}
-     * @api private
-     */
-
-    function onFulfilled(res) {
-      var ret;
-      try {
-        ret = gen.next(res);
-      } catch (e) {
-        return reject(e);
-      }
-      next(ret);
-    }
-
-    /**
-     * @param {Error} err
-     * @return {Promise}
-     * @api private
-     */
-
-    function onRejected(err) {
-      var ret;
-      try {
-        ret = gen.throw(err);
-      } catch (e) {
-        return reject(e);
-      }
-      next(ret);
-    }
-
-    /**
-     * Get the next value in the generator,
-     * return a promise.
-     *
-     * @param {Object} ret
-     * @return {Promise}
-     * @api private
-     */
-
-    function next(ret) {
-      if (ret.done) return resolve(ret.value);
-      var value = toPromise.call(ctx, ret.value);
-      if (value && isPromise(value)) return value.then(onFulfilled, onRejected);
-      return onRejected(new TypeError('You may only yield a function, promise, generator, array, or object, '
-        + 'but the following object was passed: "' + String(ret.value) + '"'));
-    }
-  });
-}
-
-/**
- * Convert a `yield`ed value into a promise.
- *
- * @param {Mixed} obj
- * @return {Promise}
- * @api private
- */
-
-function toPromise(obj) {
-  if (!obj) return obj;
-  if (isPromise(obj)) return obj;
-  if (isGeneratorFunction(obj) || isGenerator(obj)) return co.call(this, obj);
-  if ('function' == typeof obj) return thunkToPromise.call(this, obj);
-  if (Array.isArray(obj)) return arrayToPromise.call(this, obj);
-  if (isObject(obj)) return objectToPromise.call(this, obj);
-  return obj;
-}
-
-/**
- * Convert a thunk to a promise.
- *
- * @param {Function}
- * @return {Promise}
- * @api private
- */
-
-function thunkToPromise(fn) {
-  var ctx = this;
-  return new Promise(function (resolve, reject) {
-    fn.call(ctx, function (err, res) {
-      if (err) return reject(err);
-      if (arguments.length > 2) res = slice.call(arguments, 1);
-      resolve(res);
-    });
-  });
-}
-
-/**
- * Convert an array of "yieldables" to a promise.
- * Uses `Promise.all()` internally.
- *
- * @param {Array} obj
- * @return {Promise}
- * @api private
- */
-
-function arrayToPromise(obj) {
-  return Promise.all(obj.map(toPromise, this));
-}
-
-/**
- * Convert an object of "yieldables" to a promise.
- * Uses `Promise.all()` internally.
- *
- * @param {Object} obj
- * @return {Promise}
- * @api private
- */
-
-function objectToPromise(obj){
-  var results = new obj.constructor();
-  var keys = Object.keys(obj);
-  var promises = [];
-  for (var i = 0; i < keys.length; i++) {
-    var key = keys[i];
-    var promise = toPromise.call(this, obj[key]);
-    if (promise && isPromise(promise)) defer(promise, key);
-    else results[key] = obj[key];
-  }
-  return Promise.all(promises).then(function () {
-    return results;
-  });
-
-  function defer(promise, key) {
-    // predefine the key in the result
-    results[key] = undefined;
-    promises.push(promise.then(function (res) {
-      results[key] = res;
-    }));
-  }
-}
-
-/**
- * Check if `obj` is a promise.
- *
- * @param {Object} obj
- * @return {Boolean}
- * @api private
- */
-
-function isPromise(obj) {
-  return 'function' == typeof obj.then;
-}
-
-/**
- * Check if `obj` is a generator.
- *
- * @param {Mixed} obj
- * @return {Boolean}
- * @api private
- */
-
-function isGenerator(obj) {
-  return 'function' == typeof obj.next && 'function' == typeof obj.throw;
-}
-
-/**
- * Check if `obj` is a generator function.
- *
- * @param {Mixed} obj
- * @return {Boolean}
- * @api private
- */
-function isGeneratorFunction(obj) {
-  var constructor = obj.constructor;
-  if (!constructor) return false;
-  if ('GeneratorFunction' === constructor.name || 'GeneratorFunction' === constructor.displayName) return true;
-  return isGenerator(constructor.prototype);
-}
-
-/**
- * Check for plain object.
- *
- * @param {Mixed} val
- * @return {Boolean}
- * @api private
- */
-
-function isObject(val) {
-  return Object == val.constructor;
-}
-
-},{}],30:[function(require,module,exports){
+},{"punycode":27,"querystring":30}],32:[function(require,module,exports){
 function DOMParser(options){
 	this.options = options ||{locator:{}};
 	
@@ -5117,6 +5334,7 @@ DOMParser.prototype.parseFromString = function(source,mimeType){
 		entityMap.copy = '\xa9';
 		defaultNSMap['']= 'http://www.w3.org/1999/xhtml';
 	}
+	defaultNSMap.xml = defaultNSMap.xml || 'http://www.w3.org/XML/1998/namespace';
 	if(source){
 		sax.parse(source,defaultNSMap,entityMap);
 	}else{
@@ -5136,27 +5354,20 @@ function buildErrorHandler(errorImpl,domBuilder,locator){
 	locator = locator||{}
 	function build(key){
 		var fn = errorImpl[key];
-		if(!fn){
-			if(isCallback){
-				fn = errorImpl.length == 2?function(msg){errorImpl(key,msg)}:errorImpl;
-			}else{
-				var i=arguments.length;
-				while(--i){
-					if(fn = errorImpl[arguments[i]]){
-						break;
-					}
-				}
-			}
+		if(!fn && isCallback){
+			fn = errorImpl.length == 2?function(msg){errorImpl(key,msg)}:errorImpl;
 		}
 		errorHandler[key] = fn && function(msg){
-			fn(msg+_locator(locator));
+			fn('[xmldom '+key+']\t'+msg+_locator(locator));
 		}||function(){};
 	}
-	build('warning','warn');
-	build('error','warn','warning');
-	build('fatalError','warn','warning','error');
+	build('warning');
+	build('error');
+	build('fatalError');
 	return errorHandler;
 }
+
+//console.log('#\n\n\n\n\n\n\n####')
 /**
  * +ContentHandler+ErrorHandler
  * +LexicalHandler+EntityResolver2
@@ -5273,13 +5484,13 @@ DOMHandler.prototype = {
 	 * @link http://www.saxproject.org/apidoc/org/xml/sax/ErrorHandler.html
 	 */
 	warning:function(error) {
-		console.warn(error,_locator(this.locator));
+		console.warn('[xmldom warning]\t'+error,_locator(this.locator));
 	},
 	error:function(error) {
-		console.error(error,_locator(this.locator));
+		console.error('[xmldom error]\t'+error,_locator(this.locator));
 	},
 	fatalError:function(error) {
-		console.error(error,_locator(this.locator));
+		console.error('[xmldom fatalError]\t'+error,_locator(this.locator));
 	    throw error;
 	}
 }
@@ -5350,7 +5561,7 @@ if(typeof require == 'function'){
 	exports.DOMParser = DOMParser;
 }
 
-},{"./dom":31,"./sax":32}],31:[function(require,module,exports){
+},{"./dom":33,"./sax":34}],33:[function(require,module,exports){
 /*
  * DOM Level 2
  * Object DOMException
@@ -5462,6 +5673,12 @@ NodeList.prototype = {
 	 */
 	item: function(index) {
 		return this[index] || null;
+	},
+	toString:function(){
+		for(var buf = [], i = 0;i<this.length;i++){
+			serializeToString(this[i],buf);
+		}
+		return buf.join('');
 	}
 };
 function LiveNodeList(node,refresh){
@@ -5620,12 +5837,12 @@ DOMImplementation.prototype = {
 	// Introduced in DOM Level 2:
 	createDocument:function(namespaceURI,  qualifiedName, doctype){// raises:INVALID_CHARACTER_ERR,NAMESPACE_ERR,WRONG_DOCUMENT_ERR
 		var doc = new Document();
+		doc.implementation = this;
+		doc.childNodes = new NodeList();
 		doc.doctype = doctype;
 		if(doctype){
 			doc.appendChild(doctype);
 		}
-		doc.implementation = this;
-		doc.childNodes = new NodeList();
 		if(qualifiedName){
 			var root = doc.createElementNS(namespaceURI,qualifiedName);
 			doc.appendChild(root);
@@ -6112,7 +6329,7 @@ Element.prototype = {
 	},
 	setAttributeNS : function(namespaceURI, qualifiedName, value){
 		var attr = this.ownerDocument.createAttributeNS(namespaceURI, qualifiedName);
-		attr.value = attr.nodeValue = value;
+		attr.value = attr.nodeValue = "" + value;
 		this.setAttributeNode(attr)
 	},
 	getAttributeNodeNS : function(namespaceURI, localName){
@@ -6134,7 +6351,7 @@ Element.prototype = {
 		return new LiveNodeList(this,function(base){
 			var ls = [];
 			_visitNode(base,function(node){
-				if(node !== base && node.nodeType === ELEMENT_NODE && node.namespaceURI === namespaceURI && (localName === '*' || node.localName == localName)){
+				if(node !== base && node.nodeType === ELEMENT_NODE && (namespaceURI === '*' || node.namespaceURI === namespaceURI) && (localName === '*' || node.localName == localName)){
 					ls.push(node);
 				}
 			});
@@ -6255,27 +6472,30 @@ function ProcessingInstruction() {
 ProcessingInstruction.prototype.nodeType = PROCESSING_INSTRUCTION_NODE;
 _extends(ProcessingInstruction,Node);
 function XMLSerializer(){}
-XMLSerializer.prototype.serializeToString = function(node){
+XMLSerializer.prototype.serializeToString = function(node,attributeSorter){
+	return node.toString(attributeSorter);
+}
+Node.prototype.toString =function(attributeSorter){
 	var buf = [];
-	serializeToString(node,buf);
+	serializeToString(this,buf,attributeSorter);
 	return buf.join('');
 }
-Node.prototype.toString =function(){
-	return XMLSerializer.prototype.serializeToString(this);
-}
-function serializeToString(node,buf){
+function serializeToString(node,buf,attributeSorter,isHTML){
 	switch(node.nodeType){
 	case ELEMENT_NODE:
 		var attrs = node.attributes;
 		var len = attrs.length;
 		var child = node.firstChild;
 		var nodeName = node.tagName;
-		var isHTML = htmlns === node.namespaceURI
+		isHTML =  (htmlns === node.namespaceURI) ||isHTML 
 		buf.push('<',nodeName);
-		for(var i=0;i<len;i++){
-			serializeToString(attrs.item(i),buf,isHTML);
+		if(attributeSorter){
+			buf.sort.apply(attrs, attributeSorter);
 		}
-		if(child || isHTML && !/^(?:meta|link|img|br|hr|input)$/i.test(nodeName)){
+		for(var i=0;i<len;i++){
+			serializeToString(attrs.item(i),buf,attributeSorter,isHTML);
+		}
+		if(child || isHTML && !/^(?:meta|link|img|br|hr|input|button)$/i.test(nodeName)){
 			buf.push('>');
 			//if is cdata child node
 			if(isHTML && /^script$/i.test(nodeName)){
@@ -6284,7 +6504,7 @@ function serializeToString(node,buf){
 				}
 			}else{
 				while(child){
-					serializeToString(child,buf);
+					serializeToString(child,buf,attributeSorter,isHTML);
 					child = child.nextSibling;
 				}
 			}
@@ -6297,7 +6517,7 @@ function serializeToString(node,buf){
 	case DOCUMENT_FRAGMENT_NODE:
 		var child = node.firstChild;
 		while(child){
-			serializeToString(child,buf);
+			serializeToString(child,buf,attributeSorter,isHTML);
 			child = child.nextSibling;
 		}
 		return;
@@ -6490,12 +6710,12 @@ if(typeof require == 'function'){
 	exports.XMLSerializer = XMLSerializer;
 }
 
-},{}],32:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 //[4]   	NameStartChar	   ::=   	":" | [A-Z] | "_" | [a-z] | [#xC0-#xD6] | [#xD8-#xF6] | [#xF8-#x2FF] | [#x370-#x37D] | [#x37F-#x1FFF] | [#x200C-#x200D] | [#x2070-#x218F] | [#x2C00-#x2FEF] | [#x3001-#xD7FF] | [#xF900-#xFDCF] | [#xFDF0-#xFFFD] | [#x10000-#xEFFFF]
 //[4a]   	NameChar	   ::=   	NameStartChar | "-" | "." | [0-9] | #xB7 | [#x0300-#x036F] | [#x203F-#x2040]
 //[5]   	Name	   ::=   	NameStartChar (NameChar)*
 var nameStartChar = /[A-Z_a-z\xC0-\xD6\xD8-\xF6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]///\u10000-\uEFFFF
-var nameChar = new RegExp("[\\-\\.0-9"+nameStartChar.source.slice(1,-1)+"\u00B7\u0300-\u036F\\ux203F-\u2040]");
+var nameChar = new RegExp("[\\-\\.0-9"+nameStartChar.source.slice(1,-1)+"\u00B7\u0300-\u036F\\u203F-\u2040]");
 var tagNamePattern = new RegExp('^'+nameStartChar.source+nameChar.source+'*(?:\:'+nameStartChar.source+nameChar.source+'*)?$');
 //var tagNamePattern = /^[a-zA-Z_][\w\-\.]*(?:\:[a-zA-Z_][\w\-\.]*)?$/
 //var handlers = 'resolveEntity,getExternalSubset,characters,endDocument,endElement,endPrefixMapping,ignorableWhitespace,processingInstruction,setDocumentLocator,skippedEntity,startDocument,startElement,startPrefixMapping,notationDecl,unparsedEntityDecl,error,fatalError,warning,attributeDecl,elementDecl,externalEntityDecl,internalEntityDecl,comment,endCDATA,endDTD,endEntity,startCDATA,startDTD,startEntity'.split(',')
@@ -6551,22 +6771,24 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 		}
 	}
 	function appendText(end){//has some bugs
-		var xt = source.substring(start,end).replace(/&#?\w+;/g,entityReplacer);
-		locator&&position(start);
-		domBuilder.characters(xt,0,end-start);
-		start = end
+		if(end>start){
+			var xt = source.substring(start,end).replace(/&#?\w+;/g,entityReplacer);
+			locator&&position(start);
+			domBuilder.characters(xt,0,end-start);
+			start = end
+		}
 	}
-	function position(start,m){
-		while(start>=endPos && (m = linePattern.exec(source))){
-			startPos = m.index;
-			endPos = startPos + m[0].length;
+	function position(p,m){
+		while(p>=lineEnd && (m = linePattern.exec(source))){
+			lineStart = m.index;
+			lineEnd = lineStart + m[0].length;
 			locator.lineNumber++;
 			//console.log('line++:',locator,startPos,endPos)
 		}
-		locator.columnNumber = start-startPos+1;
+		locator.columnNumber = p-lineStart+1;
 	}
-	var startPos = 0;
-	var endPos = 0;
+	var lineStart = 0;
+	var lineEnd = 0;
 	var linePattern = /.+(?:\r\n?|\n)|.*$/g
 	var locator = domBuilder.locator;
 	
@@ -6574,64 +6796,66 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 	var closeMap = {};
 	var start = 0;
 	while(true){
-		var i = source.indexOf('<',start);
-		if(i<0){
-			if(!source.substr(start).match(/^\s*$/)){
-				var doc = domBuilder.document;
-    			var text = doc.createTextNode(source.substr(start));
-    			doc.appendChild(text);
-    			domBuilder.currentElement = text;
-			}
-			return;
-		}
-		if(i>start){
-			appendText(i);
-		}
-		switch(source.charAt(i+1)){
-		case '/':
-			var end = source.indexOf('>',i+3);
-			var tagName = source.substring(i+2,end);
-			var config = parseStack.pop();
-			var localNSMap = config.localNSMap;
-			
-	        if(config.tagName != tagName){
-	            errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
-	        }
-			domBuilder.endElement(config.uri,config.localName,tagName);
-			if(localNSMap){
-				for(var prefix in localNSMap){
-					domBuilder.endPrefixMapping(prefix) ;
+		try{
+			var tagStart = source.indexOf('<',start);
+			if(tagStart<0){
+				if(!source.substr(start).match(/^\s*$/)){
+					var doc = domBuilder.document;
+	    			var text = doc.createTextNode(source.substr(start));
+	    			doc.appendChild(text);
+	    			domBuilder.currentElement = text;
 				}
+				return;
 			}
-			end++;
-			break;
-			// end elment
-		case '?':// <?...?>
-			locator&&position(i);
-			end = parseInstruction(source,i,domBuilder);
-			break;
-		case '!':// <!doctype,<![CDATA,<!--
-			locator&&position(i);
-			end = parseDCC(source,i,domBuilder,errorHandler);
-			break;
-		default:
-			try{
-				locator&&position(i);
+			if(tagStart>start){
+				appendText(tagStart);
+			}
+			switch(source.charAt(tagStart+1)){
+			case '/':
+				var end = source.indexOf('>',tagStart+3);
+				var tagName = source.substring(tagStart+2,end);
+				var config = parseStack.pop();
+				var localNSMap = config.localNSMap;
+		        if(config.tagName != tagName){
+		            errorHandler.fatalError("end tag name: "+tagName+' is not match the current start tagName:'+config.tagName );
+		        }
+				domBuilder.endElement(config.uri,config.localName,tagName);
+				if(localNSMap){
+					for(var prefix in localNSMap){
+						domBuilder.endPrefixMapping(prefix) ;
+					}
+				}
+				end++;
+				break;
+				// end elment
+			case '?':// <?...?>
+				locator&&position(tagStart);
+				end = parseInstruction(source,tagStart,domBuilder);
+				break;
+			case '!':// <!doctype,<![CDATA,<!--
+				locator&&position(tagStart);
+				end = parseDCC(source,tagStart,domBuilder,errorHandler);
+				break;
+			default:
+			
+				locator&&position(tagStart);
 				
 				var el = new ElementAttributes();
 				
 				//elStartEnd
-				var end = parseElementStartPart(source,i,el,entityReplacer,errorHandler);
+				var end = parseElementStartPart(source,tagStart,el,entityReplacer,errorHandler);
 				var len = el.length;
-				//position fixed
-				if(len && locator){
-					var backup = copyLocator(locator,{});
-					for(var i = 0;i<len;i++){
-						var a = el[i];
-						position(a.offset);
-						a.offset = copyLocator(locator,{});
+				
+				if(locator){
+					if(len){
+						//attribute position fixed
+						for(var i = 0;i<len;i++){
+							var a = el[i];
+							position(a.offset);
+							a.offset = copyLocator(locator,{});
+						}
 					}
-					copyLocator(backup,locator);
+					position(end);
 				}
 				if(!el.closed && fixSelfClosed(source,end,el.tagName,closeMap)){
 					el.closed = true;
@@ -6647,17 +6871,16 @@ function parse(source,defaultNSMapCopy,entityMap,domBuilder,errorHandler){
 				}else{
 					end++;
 				}
-			}catch(e){
-				errorHandler.error('element parse error: '+e);
-				end = -1;
 			}
-
+		}catch(e){
+			errorHandler.error('element parse error: '+e);
+			end = -1;
 		}
-		if(end<0){
-			//TODO: 这里有可能sax回退，有位置错误风险
-			appendText(i+1);
-		}else{
+		if(end>start){
 			start = end;
+		}else{
+			//TODO: 这里有可能sax回退，有位置错误风险
+			appendText(Math.max(tagStart,start)+1);
 		}
 	}
 }
@@ -6665,7 +6888,6 @@ function copyLocator(f,t){
 	t.lineNumber = f.lineNumber;
 	t.columnNumber = f.columnNumber;
 	return t;
-	
 }
 
 /**
@@ -7076,10 +7298,10 @@ if(typeof require == 'function'){
 }
 
 
-},{}],33:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 module.exports={
   "name": "dav",
-  "version": "1.7.7",
+  "version": "1.7.8",
   "author": "Gareth Aye [:gaye] <gaye@mozilla.com>",
   "description": "WebDAV, CalDAV, and CardDAV client for nodejs and the browser",
   "license": "MPL-2.0",
@@ -7101,6 +7323,7 @@ module.exports={
     "rfc 6578"
   ],
   "dependencies": {
+    "btoa-lite": "^1.0.0",
     "co": "^4.6.0",
     "xmldom": "^0.1.19",
     "xmlhttprequest": "^1.7.0"
